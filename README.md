@@ -29,10 +29,10 @@ reloading. The two routers must not fight over the URL.
 │        │                                                              │
 │        ▼                                                              │
 │   ┌───────────────────────────────────────────────────────────────┐ │
-│   │ feature-web-component  ( <feature-app> Lit element )            │ │
-│   │   uses ▼  (headless router → reactive @state → lit-html)         │ │
+│   │ feature-web-component  (root element + routes.ts + view comps) │ │
+│   │   routes.ts: pattern → lambda(ctx) → <feature-list/item/…>       │ │
 │   │   ┌─────────────────────────────────────────────────────────┐  │ │
-│   │   │ subtree-router  (headless: match → onChange callback)    │  │ │
+│   │   │ subtree-router  (generic: match → render lambda → commit)│  │ │
 │   │   │   Navigation API  → intercept() navigations under base   │  │ │
 │   │   │   URLPattern      → match routes + extract :params       │  │ │
 │   │   └─────────────────────────────────────────────────────────┘  │ │
@@ -44,7 +44,7 @@ Three independent repositories, assembled into one monorepo:
 
 | Package | Repo | Role |
 |---|---|---|
-| `@igor-ganov/subtree-router` | `router-lib/` | Framework-agnostic **headless** router (Navigation API + URLPattern) |
+| `@igor-ganov/subtree-router` | `router-lib/` | View-library-agnostic router (Navigation API + URLPattern + commit adapter) |
 | `@igor-ganov/feature-web-component` | `web-component/` | `<feature-app>` **Lit** element that consumes the router |
 | `host-app` | `host-app/` | Angular 22 app that delegates `/feature/**` to the element |
 
@@ -66,8 +66,9 @@ Three independent repositories, assembled into one monorepo:
 3. **The web component is mount-agnostic.** It contains no hard-coded path. The host owns the
    mount path as a single constant (`FEATURE_BASE`), used both by the matcher and *injected*
    into the element via the `[base]` property binding. Mount it at `/admin` by changing one
-   line on the host — the web-component package never changes. (The element creates its router
-   in Lit's `willUpdate`, since the host sets `base` as a property *after* `connectedCallback`.)
+   line on the host — the web-component package never changes. (The root element creates its
+   router in Lit's `updated`, since the host sets `base` as a property *after*
+   `connectedCallback` and the outlet exists only after the first render.)
 
 4. **Re-entry stays robust.** Because the web component can advance the URL behind Angular's
    back, the host enables `onSameUrlNavigation: 'reload'`, so clicking back into the subtree
