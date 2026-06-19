@@ -11,6 +11,9 @@
     2. In this monorepo: drop the placeholder .gitignore entries, add each package
        as a submodule pointing at its new remote, commit, create the meta repo, push.
 
+  Pushes use the active account's token directly in a one-off URL (never written to
+  git config), so it works non-interactively even with multiple `gh` accounts.
+
   Nothing here runs automatically. Review it, confirm `gh auth status` shows you signed
   in as `igor-ganov`, then run:  pwsh ./publish.ps1
 
@@ -34,10 +37,26 @@ $Root = $PSScriptRoot
 
 function Confirm-Gh {
   Write-Host '== Checking GitHub auth ==' -ForegroundColor Cyan
-  gh auth status
   $who = (gh api user --jq '.login').Trim()
   if ($who -ne $Owner) {
     throw "gh is authenticated as '$who', not '$Owner'. Run: gh auth switch --user $Owner"
+  }
+  Write-Host "  active account: $who" -ForegroundColor Green
+}
+
+# Pushes HEAD -> main using the active account's token in a one-off URL (not persisted).
+function Push-Main([string]$Repo) {
+  $token = (gh auth token).Trim()
+  git push "https://x-access-token:$token@github.com/$Owner/$Repo.git" HEAD:main
+}
+
+function Test-Repo([string]$Repo) {
+  try { gh repo view "$Owner/$Repo" --json name -q .name *> $null; return $true } catch { return $false }
+}
+
+function Ensure-Origin([string]$Repo) {
+  if (-not (git remote | Select-String -Quiet '^origin$')) {
+    git remote add origin "https://github.com/$Owner/$Repo.git"
   }
 }
 
@@ -50,16 +69,9 @@ function Publish-Package([string]$Dir, [string]$Repo) {
     git diff --cached --quiet
     if ($LASTEXITCODE -ne 0) { git commit -m "Initial commit: $Repo" | Out-Null }
 
-    $exists = $false
-    try { gh repo view "$Owner/$Repo" *> $null; $exists = $true } catch { $exists = $false }
-    if (-not $exists) {
-      gh repo create "$Owner/$Repo" --$Visibility --source=. --remote=origin --push
-    } else {
-      if (-not (git remote | Select-String -Quiet '^origin$')) {
-        git remote add origin "https://github.com/$Owner/$Repo.git"
-      }
-      git push -u origin main
-    }
+    if (-not (Test-Repo $Repo)) { gh repo create "$Owner/$Repo" --$Visibility | Out-Null }
+    Ensure-Origin $Repo
+    Push-Main $Repo
   } finally { Pop-Location }
 }
 
@@ -76,26 +88,18 @@ function Wire-Submodules {
     Set-Content .gitignore $gi -NoNewline
 
     foreach ($entry in $Packages.GetEnumerator()) {
-      $dir = $entry.Key
-      $repo = $entry.Value
-      if (-not (Test-Path (Join-Path '.git/modules' $dir))) {
-        git submodule add --force "https://github.com/$Owner/$repo.git" $dir
+      if (-not (Test-Path (Join-Path '.git/modules' $entry.Key))) {
+        git submodule add --force "https://github.com/$Owner/$($entry.Value).git" $entry.Key
       }
     }
 
     git add -A
-    git commit -m 'Assemble monorepo from package submodules' | Out-Null
+    git diff --cached --quiet
+    if ($LASTEXITCODE -ne 0) { git commit -m 'Assemble monorepo from package submodules' | Out-Null }
 
-    $exists = $false
-    try { gh repo view "$Owner/$MetaRepo" *> $null; $exists = $true } catch { $exists = $false }
-    if (-not $exists) {
-      gh repo create "$Owner/$MetaRepo" --$Visibility --source=. --remote=origin --push
-    } else {
-      if (-not (git remote | Select-String -Quiet '^origin$')) {
-        git remote add origin "https://github.com/$Owner/$MetaRepo.git"
-      }
-      git push -u origin main
-    }
+    if (-not (Test-Repo $MetaRepo)) { gh repo create "$Owner/$MetaRepo" --$Visibility | Out-Null }
+    Ensure-Origin $MetaRepo
+    Push-Main $MetaRepo
   } finally { Pop-Location }
 }
 

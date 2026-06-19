@@ -110,17 +110,24 @@ bun run typecheck      # type-check both libraries
 Open <http://localhost:4200> and try the **Feature** tab (its **Items** / **Counter** tabs),
 or deep-link straight to <http://localhost:4200/feature/item/2>.
 
-## Publishing to github.com/igor-ganov
+## Repositories (github.com/igor-ganov)
 
-The three packages are scaffolded locally as plain directories (so Bun can link them). The
-[`publish.ps1`](publish.ps1) script turns them into published GitHub repos under
-`igor-ganov` and wires them back as submodules of this monorepo. It does **not** run
-automatically — review it, make sure `gh auth status` shows you signed in as `igor-ganov`,
-then run it yourself:
+Published as one monorepo of three submodules:
 
-```powershell
-gh auth status                     # confirm the right account
-pwsh ./publish.ps1                 # creates 4 repos, pushes, wires submodules
+| Repo | Contents |
+|---|---|
+| [`angular-webcomponent-routing`](https://github.com/igor-ganov/angular-webcomponent-routing) | this monorepo (submodules + bun workspace) |
+| [`subtree-router`](https://github.com/igor-ganov/subtree-router) | `router-lib/` |
+| [`feature-web-component`](https://github.com/igor-ganov/feature-web-component) | `web-component/` |
+| [`angular-host`](https://github.com/igor-ganov/angular-host) | `host-app/` |
+
+Clone with submodules, then install and run:
+
+```bash
+git clone --recursive https://github.com/igor-ganov/angular-webcomponent-routing.git
+cd angular-webcomponent-routing
+bun install && bun run start
 ```
 
-See the script header for what each step does and how to undo it.
+[`publish.ps1`](publish.ps1) reproduces the publish step (create repos, push, wire
+submodules); it is idempotent. Confirm `gh` is signed in as `igor-ganov` before running it.
