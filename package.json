@@ -1,0 +1,19 @@
+{
+  "name": "agnular-webcomponent-routing",
+  "private": true,
+  "type": "module",
+  "description": "Minimal stand: Angular host delegates a routing subtree to a web component that runs its own client-side router built on the Navigation API + URLPattern.",
+  "workspaces": [
+    "router-lib",
+    "web-component",
+    "host-app"
+  ],
+  "scripts": {
+    "build:router": "bun run --filter @igor-ganov/subtree-router build",
+    "build:wc": "bun run --filter @igor-ganov/feature-web-component build",
+    "build:libs": "bun run build:router && bun run build:wc",
+    "dev:libs": "bun run --filter @igor-ganov/subtree-router dev & bun run --filter @igor-ganov/feature-web-component dev",
+    "start": "bun run build:libs && bun run --cwd host-app start",
+    "typecheck": "bun run --filter @igor-ganov/subtree-router typecheck && bun run --filter @igor-ganov/feature-web-component typecheck"
+  }
+}
