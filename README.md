@@ -7,6 +7,8 @@ only modern browser primitives, with no coupling between the two routers.
 > Versions pinned to the latest stable releases as of **2026-06-19**: Angular 22, Lit 3.3,
 > TypeScript 6, Bun 1.3, Node 24.15.
 
+**▶ Live demo:** <https://igor-ganov.github.io/angular-webcomponent-routing/>
+
 ## The problem
 
 The Angular router owns the app's paths. One branch of the route tree — `/feature/**` — must
@@ -131,3 +133,19 @@ bun install && bun run start
 
 [`publish.ps1`](publish.ps1) reproduces the publish step (create repos, push, wire
 submodules); it is idempotent. Confirm `gh` is signed in as `igor-ganov` before running it.
+
+### Deploying to GitHub Pages
+
+Pages serves a project repo under a sub-path, so the app is built with a matching
+`--base-href`. The web component's mount path is derived from `<base href>` at runtime
+(`feature.config.ts`), so the same code works locally (`/feature`) and on Pages
+(`/angular-webcomponent-routing/feature`). A `404.html` (copy of `index.html`) provides the
+SPA deep-link fallback.
+
+```bash
+bun run build:libs
+bun --cwd host-app run build -- --base-href=/angular-webcomponent-routing/
+cd host-app/dist/host-app/browser
+cp index.html 404.html && : > .nojekyll          # SPA fallback + disable Jekyll
+# publish the folder to the gh-pages branch (served at the Pages URL)
+```
