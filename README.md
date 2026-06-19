@@ -21,10 +21,11 @@ reloading. The two routers must not fight over the URL.
 │ host-app (Angular 22)                                                 │
 │   routes: '', 'about', <matcher: /feature/**>, '**'                   │
 │                                                                       │
-│   featureMatcher  ── consumes the WHOLE /feature subtree into one     │
-│                       route node → component is never re-created      │
+│   FEATURE_BASE ── single source of truth for the mount path           │
+│   featureMatcher  ── consumes the WHOLE subtree into one route         │
+│                       node → component is never re-created            │
 │                                                                       │
-│   <feature-app base="/feature">  ◄── CUSTOM_ELEMENTS_SCHEMA           │
+│   <feature-app [base]="FEATURE_BASE">  ◄── CUSTOM_ELEMENTS_SCHEMA      │
 │        │                                                              │
 │        ▼                                                              │
 │   ┌───────────────────────────────────────────────────────────────┐ │
@@ -50,8 +51,8 @@ Three independent repositories, assembled into one monorepo:
 ### Why it works without conflict
 
 1. **Angular side — one route for the whole subtree.** A custom
-   [`UrlMatcher`](host-app/src/app/feature/feature.matcher.ts) consumes *all* segments under
-   `/feature`. Because every sub-path resolves to the same route node, Angular reuses the
+   [`UrlMatcher`](host-app/src/app/feature/feature.config.ts) consumes *all* segments under
+   `FEATURE_BASE`. Because every sub-path resolves to the same route node, Angular reuses the
    host component instance — the embedded web component is **never destroyed** on internal
    navigation.
 
@@ -59,11 +60,17 @@ Three independent repositories, assembled into one monorepo:
    [`subtree-router`](router-lib/src/index.ts) listens to the global `navigate` event and
    calls `event.intercept()` **only** for destinations under its `base`. Internal links
    become same-document transitions; Angular (which listens to `popstate`, not the
-   `navigate` event) never sees them. Navigations that leave `/feature` are left untouched,
+   `navigate` event) never sees them. Navigations that leave the subtree are left untouched,
    so Angular handles them normally.
 
-3. **Re-entry stays robust.** Because the web component can advance the URL behind Angular's
-   back, the host enables `onSameUrlNavigation: 'reload'`, so clicking back into `/feature`
+3. **The web component is mount-agnostic.** It contains no hard-coded path. The host owns the
+   mount path as a single constant (`FEATURE_BASE`), used both by the matcher and *injected*
+   into the element via the `[base]` property binding. Mount it at `/admin` by changing one
+   line on the host — the web-component package never changes. (The element creates its router
+   in Lit's `willUpdate`, since the host sets `base` as a property *after* `connectedCallback`.)
+
+4. **Re-entry stays robust.** Because the web component can advance the URL behind Angular's
+   back, the host enables `onSameUrlNavigation: 'reload'`, so clicking back into the subtree
    always produces a navigation the component can pick up.
 
 All five behaviours are verified in a real browser: deep-link on first load, internal
