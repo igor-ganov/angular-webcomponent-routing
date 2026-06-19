@@ -78,6 +78,17 @@ All five behaviours are verified in a real browser: deep-link on first load, int
 navigation, browser back/forward, leaving the subtree, and re-entering it — none of which
 triggers a page reload.
 
+### Inside the web component
+
+Routes are declared once in [`web-component/src/routes.ts`](web-component/src/routes.ts) as
+`pattern → lambda(ctx) → component`, with route params propagated into each page via Lit
+property bindings. Every page is its own Lit element in `web-component/src/views/`, and the
+router is initialised at the app root, not inside any page.
+
+The **Counter** tab additionally shows shared state with [`@lit-labs/signals`](https://www.npmjs.com/package/@lit-labs/signals):
+a single signal is displayed in the root element's header and mutated from the child page —
+no prop drilling or events, and the value survives tab navigation.
+
 ## DX with the monorepo
 
 - **Runtime:** [Bun](https://bun.sh) workspaces. One `bun install` at the root links the
@@ -96,8 +107,8 @@ bun run start          # build libs, then `ng serve` the host on :4200
 bun run typecheck      # type-check both libraries
 ```
 
-Open <http://localhost:4200> and try the **Feature** tab, or deep-link straight to
-<http://localhost:4200/feature/item/2>.
+Open <http://localhost:4200> and try the **Feature** tab (its **Items** / **Counter** tabs),
+or deep-link straight to <http://localhost:4200/feature/item/2>.
 
 ## Publishing to github.com/igor-ganov
 
