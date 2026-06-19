@@ -47,7 +47,8 @@ function Publish-Package([string]$Dir, [string]$Repo) {
   try {
     if (-not (Test-Path .git)) { git init -b main | Out-Null }
     git add -A
-    if (-not (git diff --cached --quiet; $?)) { git commit -m "Initial commit: $Repo" | Out-Null }
+    git diff --cached --quiet
+    if ($LASTEXITCODE -ne 0) { git commit -m "Initial commit: $Repo" | Out-Null }
 
     $exists = $false
     try { gh repo view "$Owner/$Repo" *> $null; $exists = $true } catch { $exists = $false }

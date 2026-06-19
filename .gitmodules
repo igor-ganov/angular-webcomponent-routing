@@ -1,0 +1,9 @@
+[submodule "router-lib"]
+	path = router-lib
+	url = https://github.com/igor-ganov/subtree-router.git
+[submodule "web-component"]
+	path = web-component
+	url = https://github.com/igor-ganov/feature-web-component.git
+[submodule "host-app"]
+	path = host-app
+	url = https://github.com/igor-ganov/angular-host.git

@@ -7,10 +7,3 @@ dist/
 *.log
 .DS_Store
 .setting/
-
-# --- workspace packages are independent git repos ---
-# Locally they are plain directories so `bun` workspaces can link them.
-# `publish.ps1` converts them into git submodules once their remotes exist.
-/router-lib/
-/web-component/
-/host-app/
