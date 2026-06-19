@@ -11,7 +11,7 @@ only modern browser primitives, with no coupling between the two routers.
 
 The Angular router owns the app's paths. One branch of the route tree — `/feature/**` — must
 be handed over wholesale to a web component, which then drives its **own** routing for every
-sub-path (`/feature/inbox`, `/feature/item/42`, …) without Angular re-rendering or the page
+sub-path (`/feature`, `/feature/item/2`, …) without Angular re-rendering or the page
 reloading. The two routers must not fight over the URL.
 
 ## The solution
@@ -96,7 +96,7 @@ bun run typecheck      # type-check both libraries
 ```
 
 Open <http://localhost:4200> and try the **Feature** tab, or deep-link straight to
-<http://localhost:4200/feature/inbox>.
+<http://localhost:4200/feature/item/2>.
 
 ## Publishing to github.com/igor-ganov
 
