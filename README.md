@@ -4,8 +4,8 @@ A minimal stand demonstrating how an **Angular** application can host a **web co
 that runs its **own client-side router** over a delegated slice of the URL space — using
 only modern browser primitives, with no coupling between the two routers.
 
-> Versions pinned to the latest stable releases as of **2026-06-19**: Angular 22, Lit-free
-> vanilla custom element, TypeScript 6, Bun 1.3, Node 24.15.
+> Versions pinned to the latest stable releases as of **2026-06-19**: Angular 22, Lit 3.3,
+> TypeScript 6, Bun 1.3, Node 24.15.
 
 ## The problem
 
@@ -28,10 +28,10 @@ reloading. The two routers must not fight over the URL.
 │        │                                                              │
 │        ▼                                                              │
 │   ┌───────────────────────────────────────────────────────────────┐ │
-│   │ feature-web-component  ( <feature-app> custom element )         │ │
-│   │   uses ▼                                                        │ │
+│   │ feature-web-component  ( <feature-app> Lit element )            │ │
+│   │   uses ▼  (headless router → reactive @state → lit-html)         │ │
 │   │   ┌─────────────────────────────────────────────────────────┐  │ │
-│   │   │ subtree-router                                           │  │ │
+│   │   │ subtree-router  (headless: match → onChange callback)    │  │ │
 │   │   │   Navigation API  → intercept() navigations under base   │  │ │
 │   │   │   URLPattern      → match routes + extract :params       │  │ │
 │   │   └─────────────────────────────────────────────────────────┘  │ │
@@ -43,8 +43,8 @@ Three independent repositories, assembled into one monorepo:
 
 | Package | Repo | Role |
 |---|---|---|
-| `@igor-ganov/subtree-router` | `router-lib/` | Framework-agnostic router (Navigation API + URLPattern) |
-| `@igor-ganov/feature-web-component` | `web-component/` | `<feature-app>` custom element that consumes the router |
+| `@igor-ganov/subtree-router` | `router-lib/` | Framework-agnostic **headless** router (Navigation API + URLPattern) |
+| `@igor-ganov/feature-web-component` | `web-component/` | `<feature-app>` **Lit** element that consumes the router |
 | `host-app` | `host-app/` | Angular 22 app that delegates `/feature/**` to the element |
 
 ### Why it works without conflict
