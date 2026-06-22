@@ -9,6 +9,18 @@ only modern browser primitives, with no coupling between the two routers.
 
 **▶ Live demo:** <https://igor-ganov.github.io/angular-webcomponent-routing/>
 
+## Quick start
+
+```bash
+git clone --recursive https://github.com/igor-ganov/angular-webcomponent-routing.git
+cd angular-webcomponent-routing
+bun install && bun run start
+```
+
+Open <http://localhost:4200>, switch to the **Feature** tab (its **Items** / **Counter**
+tabs), or deep-link straight to <http://localhost:4200/feature/item/2> — internal navigation
+never reloads the page. `--recursive` is required: the three packages are git submodules.
+
 ## The problem
 
 The Angular router owns the app's paths. One branch of the route tree — `/feature/**` — must
