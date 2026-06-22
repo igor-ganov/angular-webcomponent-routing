@@ -11,6 +11,8 @@ only modern browser primitives, with no coupling between the two routers.
 
 ## Quick start
 
+### Run this demo
+
 ```bash
 git clone --recursive https://github.com/igor-ganov/angular-webcomponent-routing.git
 cd angular-webcomponent-routing
@@ -20,6 +22,80 @@ bun install && bun run start
 Open <http://localhost:4200>, switch to the **Feature** tab (its **Items** / **Counter**
 tabs), or deep-link straight to <http://localhost:4200/feature/item/2> — internal navigation
 never reloads the page. `--recursive` is required: the three packages are git submodules.
+
+### Wire it into your own project
+
+The engine [`@igor-ganov/subtree-router`](router-lib/src/index.ts) owns a *subtree* of the URL
+(everything under `base`) and knows nothing about your view layer — you connect it with one
+`commit(view, outlet)` adapter. A route is just `pattern + lambda(ctx) → view`. Navigations
+outside `base` are left untouched, so the host router keeps its own paths.
+
+```ts
+// the entire public API
+createSubtreeRouter<TView>({
+  base,      // path prefix this router owns, e.g. "/feature"
+  routes,    // [{ pattern, render: (ctx) => view }] — pattern is relative to base: "", "item/:id"
+  outlet,    // the HTMLElement the active view is committed into
+  commit,    // (view, outlet) => void — your view layer: Lit `render`, React root, replaceChildren…
+  fallback,  // optional (ctx) => view when nothing matches
+})           // → { navigate(path), dispose() }
+// render lambdas receive ctx = { params, base, url }
+```
+
+**On the web-component side** (4 steps):
+
+1. **Declare routes in one file** — `pattern → lambda(ctx) → component`, params flow in via
+   bindings. This is the only place routes live:
+   ```ts
+   export const routes = [
+     { pattern: '',         render: ({ base })         => html`<feature-list .base=${base}></feature-list>` },
+     { pattern: 'item/:id', render: ({ params, base }) => html`<feature-item .itemId=${params['id'] ?? ''} .base=${base}></feature-item>` },
+   ];
+   ```
+2. **Pick the commit adapter** for your view layer and build the router:
+   ```ts
+   const litCommit = (view, outlet) => render(view, outlet);
+   export const createAppRouter = (base, outlet) =>
+     createSubtreeRouter({ base, routes, fallback, outlet, commit: litCommit });
+   ```
+3. **The root element owns the outlet and starts the router.** It is **mount-agnostic** — the
+   host injects the path via a `base` property; the element hard-codes nothing. Create the
+   router in `updated` (the host sets `base` *after* `connectedCallback`, and the outlet exists
+   only after the first render), and `dispose()` it on disconnect:
+   ```ts
+   @property({ type: String }) base = '';
+   updated(changed) { if (changed.has('base') && this.base !== '') this.#setupRouter(); }
+   disconnectedCallback() { super.disconnectedCallback(); this.#router?.dispose(); }
+   render() { return html`… <main class="outlet"></main>`; }
+   ```
+4. **Internal links are plain `<a href>`** — the Navigation API turns clicks into same-document
+   transitions, so the host never sees them. Build hrefs from `base` (`toHref(base, 'counter')`).
+
+**On the Angular host side** (3 steps):
+
+1. **Consume the whole subtree with one `UrlMatcher`** — so every sub-path resolves to the same
+   route node and Angular *never destroys* the embedded element on internal navigation:
+   ```ts
+   const baseHref = new URL(document.baseURI).pathname.replace(/\/$/, '');
+   export const FEATURE_BASE = `${baseHref}/feature`;        // /feature locally, /repo/feature on Pages
+   export const featureMatcher = (segments) =>
+     segments[0]?.path === 'feature' ? { consumed: segments } : null;
+   ```
+2. **Register the matcher and inject `base` into the element** (`CUSTOM_ELEMENTS_SCHEMA` lets the
+   template name an unknown tag):
+   ```ts
+   { matcher: featureMatcher, component: FeatureHost }       // in your Routes
+   // FeatureHost template: <feature-app [base]="FEATURE_BASE"></feature-app>
+   ```
+3. **Register the element + enable same-URL reload:**
+   ```ts
+   import '@igor-ganov/feature-web-component';               // side-effect import in main.ts, before bootstrap
+   provideRouter(routes, withRouterConfig({ onSameUrlNavigation: 'reload' }))
+   ```
+
+Everything that changes between projects is `FEATURE_BASE` and the routes table. The engine is
+never touched, and the web component drops into any host because the mount path is injected from
+outside. To mount at `/admin` instead, change one constant on the host.
 
 ## The problem
 
